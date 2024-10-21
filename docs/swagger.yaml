@@ -1,0 +1,141 @@
+definitions:
+  models.Transaction:
+    properties:
+      amount:
+        description: Removed explicit type
+        type: number
+      canceled:
+        type: boolean
+      id:
+        type: integer
+      processed_at:
+        description: Automatically set to current time
+        type: string
+      source_type:
+        type: string
+      state:
+        type: string
+      transaction_id:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.TransactionRequest:
+    properties:
+      amount:
+        type: number
+      source_type:
+        type: string
+      state:
+        type: string
+      transactionId:
+        type: string
+    required:
+    - amount
+    - state
+    - transactionId
+    type: object
+  models.User:
+    properties:
+      balance:
+        description: Removed explicit type
+        type: number
+      id:
+        type: integer
+    type: object
+  models.UserInfo:
+    properties:
+      transaction:
+        items:
+          $ref: '#/definitions/models.Transaction'
+        type: array
+      user:
+        $ref: '#/definitions/models.User'
+    type: object
+info:
+  contact: {}
+paths:
+  /health:
+    get:
+      consumes:
+      - '*/*'
+      description: get the Health status of server.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Show the Health status of server.
+      tags:
+      - Health Status
+  /transaction:
+    post:
+      consumes:
+      - application/json
+      description: Create a new transaction item
+      parameters:
+      - description: Transaction Request
+        in: body
+        name: transaction
+        required: true
+        schema:
+          $ref: '#/definitions/models.TransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Transaction created
+          schema:
+            $ref: '#/definitions/models.UserInfo'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a transaction
+      tags:
+      - transactions
+  /transaction/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve transactions for a specific user by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserInfo'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get transaction details for a user
+      tags:
+      - transactions
+swagger: "2.0"
