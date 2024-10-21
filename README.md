@@ -4,10 +4,13 @@
 
 Entaingo is a Golang application designed to process incoming POST requests from third-party providers. It manages user account balances based on the transaction status (win/lost) and supports Docker for easy deployment and testing.
 
+NB- `for tests purposes I have include .env and app.env files fine for tests but very wrong for production`
+
 ## Technologies
 
 - **Golang**
 - **PostgreSQL**
+
 
 ## Requirements
 
