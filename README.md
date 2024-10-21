@@ -1,4 +1,4 @@
-#Entaingo - Golang Application for Processing Incoming Requests
+# Entaingo - Golang Application for Processing Incoming Requests
 
 ## Overview
 
@@ -37,7 +37,7 @@ Entaingo is a Golang application designed to process incoming POST requests from
 
 ### Prerequisites
 
-- Go (1.16 or later)
+- Go (1.20 or later)
 - Docker
 - Docker Compose
 - PostgreSQL
