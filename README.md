@@ -75,14 +75,14 @@ Run the Docker Container:
 make dockerrun
 ```
 
-Using Docker Compose
+## Using Docker Compose
 To build and run the application using Docker Compose, run:
 
 ```bash
 make dockerCompose
 ```
 
-Running Tests
+## Running Tests
 To Run the Tests
 Execute the following command:
 
@@ -97,7 +97,7 @@ Run:
 make testCover
 ```
 
-Generating Swagger Documentation
+## Generating Swagger Documentation
 To generate Swagger documentation, use:
 
 ```bash
@@ -105,9 +105,12 @@ make swagger
 
 ```
 
-API Endpoints
+## API Endpoints
+
+```bash
 POST localhost:4000/transaction/
-Request Headers:
+```
+## Request Headers:
 
 Source-Type: client (game, server, payment)
 Content-Type: application/json
@@ -120,13 +123,14 @@ Request Body:
   "transactionId": "some_generated_identifier"
 }
 ```
-Responses:
+## Responses:
 
-200 OK: Successfully processed the request.
-400 Bad Request: Invalid input or transaction already processed.
-409 Conflict: Account balance cannot be negative.
-Post-Processing
-The application automatically cancels the 10 latest odd records every N minutes and adjusts the user balances.
+- 200 OK: Successfully processed the request.
+- 400 Bad Request: Invalid input 
+- 500 Internal Server Error
+
+## Post-Processing
+The application automatically cancels the 10 latest odd records every N minutes and adjusts the user balances. `in goroutine`
 
 
 
