@@ -89,6 +89,8 @@ Request Body:
     "transactionId": "txadv456"
 }
 ```
+- import the postman collection and run the post request while the application is running
+
 ## Responses:
 
 - 200 OK: Successfully processed the request.
