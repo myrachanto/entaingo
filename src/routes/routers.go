@@ -2,7 +2,6 @@ package routes
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -13,20 +12,24 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/myrachanto/entaingo/docs"
 	"github.com/myrachanto/entaingo/src/api/controller"
 	"github.com/myrachanto/entaingo/src/api/repository"
 	"github.com/myrachanto/entaingo/src/api/service"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // var passer echo.MiddlewareFunc
 
 func ApiServer() {
 	// Test database connection
-	fmt.Println("routes ...................................................")
 	err := repository.IndexRepo.Dbsetup()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	docs.SwaggerInfo.BasePath = "/api/v1"
 	userRepo := repository.NewUserRepo()
 	u := controller.NewUserController(service.NewUserService(userRepo))
 	router := gin.Default()
@@ -37,6 +40,8 @@ func ApiServer() {
 	router.GET("/healthy", HealthCheck)
 	router.POST("/transaction", u.Create)
 	router.GET("/transaction/:id", u.GetTransactions)
+	// api documentation
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	err = godotenv.Load()
 	if err != nil {

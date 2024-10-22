@@ -145,7 +145,9 @@ To generate Swagger documentation, use:
 make swagger
 
 ```
-
+```bash
+http://localhost:4000/swagger/index.html
+```
 
 ## Post-Processing
 The application automatically cancels the 10 latest odd records every N minutes and adjusts the user balances. `in goroutine`
