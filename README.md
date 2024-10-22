@@ -18,12 +18,12 @@ NB- `for tests purposes I have include .env and app.env files fine for tests but
    - The application exposes an HTTP endpoint to receive incoming POST requests.
    - Each request must include a JSON body with the following structure:
      ```json
-     {
-       "state": "win", // or "lost"
-       "amount": "10.15",
-       "transactionId": "txabc123"
-     }
-     ```
+      {
+         "state":"win",
+         "amount": 30.5,
+         "transactionId": "txadv456"
+      }
+      ```
    - The `Source-Type` header can be one of three types: `game`, `server`, or `payment`.
    - Win requests increase the user balance, while lost requests decrease it.
    - Each transaction (identified by `transactionId`) is processed only once.
