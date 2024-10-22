@@ -20,7 +20,7 @@ services:
       POSTGRES_PASSWORD: password@Entaingo
       POSTGRES_DB: entaingo
     ports:
-      - "5433:5432"
+      - "5433:5432"  # Maps host port 5433 to container's internal 5432
     networks:
       - entaingo_network
 
