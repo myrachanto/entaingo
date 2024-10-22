@@ -5,6 +5,7 @@ import "time"
 type User struct {
 	ID      uint    `gorm:"primaryKey" json:"id"`
 	Balance float64 `gorm:"not null;default:0.00" json:"balance"` // Removed explicit type
+	Version int     `gorm:"type:int;default:1"`                   // Optimistic locking
 }
 
 type Transaction struct {

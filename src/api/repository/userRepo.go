@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -11,6 +12,8 @@ import (
 
 	"github.com/joho/godotenv"
 	model "github.com/myrachanto/entaingo/src/api/models"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // Userrepository repository
@@ -33,32 +36,48 @@ type userrepository struct{}
 func NewUserRepo() UserrepoInterface {
 	return &userrepository{}
 }
-
 func (r *userrepository) Create(transactionReq *model.TransactionRequest) (*model.UserInfo, error) {
-
-	gorm, err := IndexRepo.Getconnected()
+	// Get default user
+	defaultUser, err := r.GetUser()
 	if err != nil {
 		return nil, err
 	}
-	defer IndexRepo.DbClose(gorm)
-	// check if the transactionid is unique
-	if ok := r.transactionIdExist(transactionReq.TransactionID); ok {
-		return nil, fmt.Errorf("transaction already processed")
+
+	// Connect to the database
+	gormdb, err := IndexRepo.Getconnected()
+	if err != nil {
+		return nil, err
 	}
+	defer IndexRepo.DbClose(gormdb)
 
-	// DB transaction
-	tx := gorm.Begin()
+	// Start transaction
+	tx := gormdb.Begin()
 
-	var user model.User
-	// check if user exists
-	if err := tx.First(&user, 1).Error; err != nil {
+	// Ensure rollback on panic
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Check if transaction already exists
+	var existingTransaction model.Transaction
+	if err := tx.Where("transaction_id = ?", transactionReq.TransactionID).First(&existingTransaction).Error; err == nil {
+		// Transaction already processed
 		tx.Rollback()
-		return nil, fmt.Errorf("user not found")
+		return nil, fmt.Errorf("transaction already processed")
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		// Some other error occurred
+		return nil, handleError(tx, err, "failed to check existing transaction")
 	}
 
-	var transaction model.Transaction
+	// Lock the user row for update (optimistic locking)
+	var user model.User
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, defaultUser.ID).Error; err != nil {
+		return nil, handleError(tx, err, "user not found")
+	}
 
-	// Calculate the new balance
+	// Update balance
 	newBalance := user.Balance
 	if transactionReq.State == "win" {
 		newBalance += transactionReq.Amount
@@ -69,15 +88,17 @@ func (r *userrepository) Create(transactionReq *model.TransactionRequest) (*mode
 			return nil, fmt.Errorf("balance cannot be negative")
 		}
 	}
-	// Update user balance
-	user.Balance = newBalance
-	if err := tx.Save(&user).Error; err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("failed to update balance")
+
+	// Optimistic lock based on version
+	if err := tx.Model(&user).Where("version = ?", user.Version).Updates(map[string]interface{}{
+		"balance": newBalance,
+		"version": user.Version + 1,
+	}).Error; err != nil {
+		return nil, handleError(tx, err, "failed to update balance, version conflict")
 	}
 
-	// Save transaction
-	transaction = model.Transaction{
+	// Create transaction record
+	transaction := model.Transaction{
 		TransactionID: transactionReq.TransactionID,
 		Amount:        transactionReq.Amount,
 		State:         transactionReq.State,
@@ -85,20 +106,31 @@ func (r *userrepository) Create(transactionReq *model.TransactionRequest) (*mode
 		UserID:        user.ID,
 	}
 	if err := tx.Create(&transaction).Error; err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("failed to save transaction")
+		return nil, handleError(tx, err, "failed to save transaction")
 	}
 
+	// Commit the transaction
 	tx.Commit()
+
+	// Return user info and transaction details
 	return &model.UserInfo{
 		User:        user,
 		Transaction: []model.Transaction{transaction},
 	}, nil
-
 }
+
+func handleError(tx *gorm.DB, err error, msg string) error {
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf(msg, err)
+	}
+	return nil
+}
+
 func (r *userrepository) CancelOddTransactions(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 	log.Println("CancelOddTransactions started ....")
+
 	// Load environment variables
 	err := godotenv.Load()
 	if err != nil {
@@ -111,11 +143,11 @@ func (r *userrepository) CancelOddTransactions(ctx context.Context, wg *sync.Wai
 		log.Fatal("failed to parse the odd Interval ", err)
 	}
 
-	gorm, err := IndexRepo.Getconnected()
+	gormdb, err := IndexRepo.Getconnected()
 	if err != nil {
 		log.Fatal("failed to connect to the database ", err)
 	}
-	defer IndexRepo.DbClose(gorm)
+	defer IndexRepo.DbClose(gormdb)
 
 	ticker := time.NewTicker(time.Minute * time.Duration(OddInterval))
 	defer ticker.Stop()
@@ -124,18 +156,25 @@ func (r *userrepository) CancelOddTransactions(ctx context.Context, wg *sync.Wai
 		select {
 		case <-ticker.C:
 			log.Println("N odd time cancellation initialized")
+
 			// Select 10 latest odd transactions that haven't been canceled
 			var transactions []model.Transaction
-			gorm.Where("id % 2 != 0 AND canceled = ?", false).
+			if err := gormdb.Where("id % 2 != 0 AND canceled = ?", false).
 				Order("processed_at desc").
 				Limit(10).
-				Find(&transactions)
+				Find(&transactions).Error; err != nil {
+				log.Println("Error fetching transactions: ", err)
+				continue
+			}
+
+			// Use a transaction to cancel and update user balances in one batch
+			tx := gormdb.Begin()
 
 			for _, transaction := range transactions {
-				tx := gorm.Begin()
 				var user model.User
 				if err := tx.First(&user, transaction.UserID).Error; err != nil {
 					tx.Rollback()
+					log.Println("Failed to fetch user for transaction: ", err)
 					continue
 				}
 
@@ -146,14 +185,17 @@ func (r *userrepository) CancelOddTransactions(ctx context.Context, wg *sync.Wai
 					user.Balance += transaction.Amount
 				}
 
+				// Prevent negative balances
 				if user.Balance < 0 {
 					tx.Rollback()
+					log.Println("Balance would be negative, skipping")
 					continue
 				}
 
 				// Update user balance
 				if err := tx.Save(&user).Error; err != nil {
 					tx.Rollback()
+					log.Println("Failed to update user balance: ", err)
 					continue
 				}
 
@@ -161,17 +203,21 @@ func (r *userrepository) CancelOddTransactions(ctx context.Context, wg *sync.Wai
 				transaction.Canceled = true
 				if err := tx.Save(&transaction).Error; err != nil {
 					tx.Rollback()
+					log.Println("Failed to cancel transaction: ", err)
 					continue
 				}
-
-				tx.Commit()
 			}
+
+			// Commit the transaction
+			tx.Commit()
+
 		case <-ctx.Done():
 			log.Println("CancelOddTransactions gracefully shutting down...")
 			return
 		}
 	}
 }
+
 func (r userrepository) GetTransactions(userId int) (*model.UserInfo, error) {
 	gorm, err := IndexRepo.Getconnected()
 	if err != nil {
@@ -192,6 +238,19 @@ func (r userrepository) GetTransactions(userId int) (*model.UserInfo, error) {
 		User:        user,
 		Transaction: results,
 	}, nil
+}
+func (r userrepository) GetUser() (*model.User, error) {
+	gorm, err := IndexRepo.Getconnected()
+	if err != nil {
+		return nil, err
+	}
+	defer IndexRepo.DbClose(gorm)
+	result := &model.User{}
+	errs := gorm.First(&result).Error
+	if errs != nil {
+		return nil, fmt.Errorf("user not found %w", errs)
+	}
+	return result, err
 }
 
 func (r userrepository) transactionIdExist(transactionId string) bool {

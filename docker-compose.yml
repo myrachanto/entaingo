@@ -10,11 +10,13 @@ services:
       - "4000:4000"
     depends_on:
       - db
+      # - redis  # Add redis to dependencies
     networks:
       - entaingo_network
 
   db:
     image: postgres:13
+    container_name: postgress
     environment:
       POSTGRES_USER: user@56
       POSTGRES_PASSWORD: password@Entaingo
@@ -23,6 +25,15 @@ services:
       - "5433:5432"  # Maps host port 5433 to container's internal 5432
     networks:
       - entaingo_network
+
+  # redis:  # Define the Redis service
+  #   image: redis:latest  # Use the latest Redis image
+  #   container_name: redis
+  #   restart: always
+  #   ports:
+  #     - "6379:6379"  # Maps host port 6379 to container's internal 6379
+  #   networks:
+  #     - entaingo_network
 
 networks:
   entaingo_network:
