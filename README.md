@@ -49,7 +49,7 @@ NB- `for tests purposes I have include .env and app.env files fine for tests but
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/entaingo.git
+   git clone https://github.com/myrachanto/entaingo.git
    cd entaingo
    ```
 
