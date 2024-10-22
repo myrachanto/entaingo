@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "5f955e55-d7e7-4770-8117-63dc02f8cc52",
+		"_postman_id": "bd8423b4-cf5a-4c29-b64a-ee5d3451d171",
 		"name": "Entaingo Collection",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "6936355"
@@ -10,10 +10,16 @@
 			"name": "New Request",
 			"request": {
 				"method": "POST",
-				"header": [],
+				"header": [
+					{
+						"key": "Source-Type",
+						"value": "server",
+						"type": "text"
+					}
+				],
 				"body": {
 					"mode": "raw",
-					"raw": "  {\n       \"state\": \"win\", // or \"lost\"\n       \"amount\": \"10.15\",\n       \"transactionId\": \"txabc123\"\n     }",
+					"raw": "{\n    \"state\":\"win\",\n    \"amount\": 30,\n    \"transactionId\": \"abcd123ere\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -38,7 +44,18 @@
 			"name": "New Request",
 			"request": {
 				"method": "GET",
-				"header": []
+				"header": [],
+				"url": {
+					"raw": "localhost:4000/transaction/1",
+					"host": [
+						"localhost"
+					],
+					"port": "4000",
+					"path": [
+						"transaction",
+						"1"
+					]
+				}
 			},
 			"response": []
 		}

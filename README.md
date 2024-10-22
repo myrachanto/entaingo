@@ -69,6 +69,55 @@ make dockerCompose
 
 and the application is live!
 
+- In this repository, I've included a Postman collection. Once imported into Postman, it allows seamless access for testing the application.
+
+## API Endpoints
+
+```bash
+POST localhost:4000/transaction/
+```
+## Request Headers:
+
+Source-Type: client (game, server, payment)
+Content-Type: application/json
+Request Body:
+
+```json
+{
+    "state":"win",
+    "amount": 30.5,
+    "transactionId": "txadv456"
+}
+```
+## Responses:
+
+- 200 OK: Successfully processed the request.
+```json
+{
+    "data": {
+        "user": {
+            "id": 1,
+            "balance": 70.5
+        },
+        "transaction": [
+            {
+                "id": 8,
+                "transaction_id": "txadv456",
+                "amount": 30.5,
+                "state": "win",
+                "source_type": "server",
+                "user_id": 1,
+                "processed_at": "2024-10-22T02:08:08.150753433Z",
+                "canceled": false
+            }
+        ]
+    }
+}
+```
+
+- 400 Bad Request: Invalid input 
+- 500 Internal Server Error
+
 ## other comands include
 
 
@@ -95,29 +144,6 @@ make swagger
 
 ```
 
-## API Endpoints
-
-```bash
-POST localhost:4000/transaction/
-```
-## Request Headers:
-
-Source-Type: client (game, server, payment)
-Content-Type: application/json
-Request Body:
-
-```json
-{
-  "state": "win",
-  "amount": "10.15",
-  "transactionId": "some_generated_identifier"
-}
-```
-## Responses:
-
-- 200 OK: Successfully processed the request.
-- 400 Bad Request: Invalid input 
-- 500 Internal Server Error
 
 ## Post-Processing
 The application automatically cancels the 10 latest odd records every N minutes and adjusts the user balances. `in goroutine`
