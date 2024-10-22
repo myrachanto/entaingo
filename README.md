@@ -55,35 +55,22 @@ NB- `for tests purposes I have include .env and app.env files fine for tests but
 
 ## Running the Application
 ### To Run the Application Locally
-Use the following command:
 
-```bash
-
-make run
-
-```
-
-### Running with Docker
-To build and run the application in a Docker container:
-
-###  Build the Docker Image:
-
-```bash
-make dockerize
-```
-
-Run the Docker Container:
-
-```bash
-make dockerrun
-```
 
 ## Using Docker Compose
-To build and run the application using Docker Compose, run:
+To build and run the application using Docker Compose, 
+With this command you get to spin two docker containers the application and the postgress database. 
+
+run:
 
 ```bash
 make dockerCompose
-```
+``` 
+
+and the application is live!
+
+## other comands include
+
 
 ## Running Tests
 To Run the Tests
